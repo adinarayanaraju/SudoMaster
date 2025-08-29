@@ -23,7 +23,6 @@ import { Label } from "reactstrap";
 import moment from "moment";
 import CustomButton from "../comp/components/Button";
 // import { ContactPerson } from "../account/components/client-form";
-import { savePatient } from "./actions/patientsActions";
 import { v4 as uuidv4 } from "uuid";
 
 import BasicInformation from "../doc_dash/patients/BasicInfomation";
@@ -85,75 +84,23 @@ const CreateNewPatient = () => {
   const setContactPerson = (val) => {
     setPatient((p) => ({ ...p, contact: val }));
   };
-  const getNextClientID = async (facId) => {
-    try {
-      const response = await fetch(
-        `${apiURL()}/patientrecords/getAccount/${facId}`
-      );
-      return await response.json();
-    } catch (error) {
-      return error;
-    }
-  };
-
-  const getNextBeneficiaryId = async (acc, facId) => {
-    try {
-      const response = await fetch(
-        `${apiURL()}/client/nextBeneficiaryId/${acc}/${facId}`
-      );
-      return await response.json();
-    } catch (error) {
-      return error;
-    }
-  };
-
-  // const setRegType = (val) => {
-  //   setPatient((p) => ({ ...p, accountType: val }));
-  //   // getAccountsPerAccountType(val);
-  // };
-
   const getNextPatientId = async () => {
     try {
-      const response = await fetch(
-        `${apiURL()}/client/next-patient-id/${facilityId}`
-      );
-      return await response.json();
+      const response = await fetch(`${apiURL()}/patients`);
+      const data = await response.json();
+      if (data.length) {
+        const lastPatient = data[data.length - 1];
+        const lastId = parseInt(lastPatient.id);
+        return { success: true, results: { id: lastId + 1 } };
+      } else {
+        return { success: true, results: { id: 1 } };
+      }
     } catch (error) {
       return error;
     }
   };
 
   const getIds = useCallback(() => {
-    getNextClientID(facilityId)
-      .then((d) => {
-        console.log(d);
-        // if (d.success) {
-        let acc = d.accountNo;
-        setPatient((prev) => ({
-          ...prev,
-          clientAccount: acc,
-        }));
-        getNextBeneficiaryId(acc, facilityId)
-          .then((d) => {
-            console.log(d);
-            if (d.success) {
-              let ben = d.results.beneficiaryNo;
-              setPatient((prev) => ({
-                ...prev,
-                clientBeneficiaryAcc: ben,
-              }));
-            }
-          })
-          .catch((err) => {
-            console.log(err);
-          });
-        // console.log(d.results.accountNo);
-        // }
-      })
-      .catch((err) => {
-        console.log(err);
-      });
-
     getNextPatientId()
       .then((m) => {
         if (m.success) {
@@ -161,6 +108,8 @@ const CreateNewPatient = () => {
           setPatient((prev) => ({
             ...prev,
             patientId: id,
+            clientAccount: id,
+            clientBeneficiaryAcc: id,
           }));
         }
       })
@@ -170,11 +119,8 @@ const CreateNewPatient = () => {
   const getPatientInfo = (_id) => {
     console.log(_id);
     _fetchApi(
-      `${apiURL()}/patientrecords/patient/${_id}`,
-      (data) => {
-        // if (data && data.length) {
-        //   console.log(data.results)
-        let info = data.results[0];
+      `${apiURL()}/patients/${_id}`,
+      (info) => {
         let ageY = moment().diff(info.dob, "years");
         let ageM = ageY < 1 ? moment().diff(info.dob, "months") : "";
         let ageD = ageY < 1 && ageM < 1 ? moment().diff(info.dob, "days") : "";
@@ -266,56 +212,41 @@ const CreateNewPatient = () => {
     } else {
       setSubmitting(true);
       const id = uuidv4();
-      let destination =
-        patient.modeOfPayment.toLowerCase() === "cash" ? "Cash" : "Bank";
       let dob = moment()
         .subtract(ageY, "years")
         .subtract(ageM, "months")
         .subtract(ageD, "days")
         .format("YYYY-MM-DD");
-      generateReceiptNo((rec, receiptNo) => {
-        let obj = {
-          ...patient,
-          dob,
-          receiptsn: rec,
-          receiptno: receiptNo,
-          description: `Deposit from account ${patient.clientAccount}`,
-          destination,
-          source: "Deposit",
-          facilityId,
-        };
-        let formdata = new FormData();
-        formdata.append("file", patients_photo);
-        Object.keys(obj).forEach((i) => formdata.append(i, obj[i]));
-        // let obj = {
 
-        //   patients_photo,
-        // };
+      let obj = {
+        ...patient,
+        dob,
+        id,
+        facilityId,
+      };
 
-        const error = () => {
-          _warningNotify("error occured");
-        };
-        const callBack = () => {
-          savePatient({ _id: id, ...patient, dob });
-          _customNotify("Patient created successfully!");
-          setSubmitting(false);
-          resetForm();
-        };
-        fetch(`${apiURL()}/save/record/info`, {
-          method: "POST",
-          // headers: { "Content-Type": "application/json" },
-          body: formdata,
+      const error = () => {
+        _warningNotify("error occured");
+      };
+      const callBack = () => {
+        _customNotify("Patient created successfully!");
+        setSubmitting(false);
+        resetForm();
+      };
+      fetch(`${apiURL()}/patients`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(obj),
+      })
+        .then((raw) => raw.json())
+        .then((response) => {
+          // console.log(response);
+          if (response.status >= 400) {
+            error(response);
+          } else callBack(response);
         })
-          .then((raw) => raw.json())
-          .then((response) => {
-            // console.log(response);
-            if (response.status >= 400) {
-              error(response);
-            } else callBack(response);
-          })
-          .catch((err) => error(err));
-        // _postApi(`${apiURL()}/save/record/info`, obj, callBack, error);
-      });
+        .catch((err) => error(err));
+      // _postApi(`${apiURL()}/save/record/info`, obj, callBack, error);
     }
   };
 
@@ -370,10 +301,10 @@ const CreateNewPatient = () => {
         setUpdating(false);
         resetForm();
       };
-      fetch(`${apiURL()}/patientrecords/update/patient`, {
-        method: "POST",
-        // headers: { "Content-Type": "application/json" },
-        body: formdata,
+      fetch(`${apiURL()}/patients/${patient.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(obj),
       })
         .then((raw) => raw.json())
         .then((response) => {
@@ -383,12 +314,6 @@ const CreateNewPatient = () => {
           } else callBack(response);
         })
         .catch((err) => error(err));
-      // _postApi(
-      //   `${apiURL()}/patientrecords/update/patient`,
-      //   obj,
-      //   callBack,
-      //   error
-      // );
     }
   };
 
@@ -399,23 +324,22 @@ const CreateNewPatient = () => {
   };
 
   const handleAccountSelect = (acc) => {
-    getNextBeneficiaryId(acc.account_no, facilityId)
-      .then((d) => {
-        // console.log(d);
-        if (d.success) {
-          let ben = d.results.beneficiaryNo;
-          console.log(d);
-
-          setPatient((prev) => ({
-            ...prev,
-            clientAccount: acc.account_no,
-            clientBeneficiaryAcc: ben,
-          }));
-        }
-      })
-      .catch((err) => {
-        console.log(err);
-      });
+    // getNextBeneficiaryId(acc.account_no, facilityId)
+    //   .then((d) => {
+    //     // console.log(d);
+    //     if (d.success) {
+    //       let ben = d.results.beneficiaryNo;
+    //       console.log(d);
+    //       setPatient((prev) => ({
+    //         ...prev,
+    //         clientAccount: acc.account_no,
+    //         clientBeneficiaryAcc: ben,
+    //       }));
+    //     }
+    //   })
+    //   .catch((err) => {
+    //     console.log(err);
+    //   });
     // setPatient(prev => ({ ...prev,  }))
   };
 

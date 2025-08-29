@@ -20,20 +20,10 @@ function Admin() {
   const dispatch = useDispatch()
 
   useEffect(() => {
-    if (!authenticated) {
-      dispatch(
-        loadUser(() => {
-          console.log('logging out')
-          dispatch(logout())
-        }),
-      )
-    } else {
-      if (user.userType !== 'admin') {
-        console.log('logging out')
-        dispatch(logout())
-      }
+    if (authenticated && user.userType !== 'admin') {
+      dispatch(logout())
     }
-  }, [])
+  }, [authenticated, user, dispatch])
 
   if (user.userType !== 'admin') return null
   return (

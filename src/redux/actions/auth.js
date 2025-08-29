@@ -102,11 +102,13 @@ export function patientLogin(
   error = (f) => f
 ) {
   return async (dispatch) => {
-    fetch(`${apiURL()}/users?email=${email}&password=${password}`)
+    fetch(`${apiURL()}/users`)
       .then((raw) => raw.json())
-      .then((data) => {
-        if (data.length) {
-          const user = data[0];
+      .then((users) => {
+        const user = users.find(
+          (u) => u.email === email && u.password === password
+        );
+        if (user) {
           localStorage.setItem("@@__token", user.id);
           dispatch({ type: LOGIN, payload: { user } });
           cb();

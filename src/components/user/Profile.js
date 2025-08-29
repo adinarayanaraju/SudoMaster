@@ -6,7 +6,6 @@ import { Avatar } from "evergreen-ui";
 import { apiURL } from "../../redux/actions";
 import { _warningNotify, _customNotify } from "../utils/helpers";
 import { useDispatch } from "react-redux";
-import { saveUserData } from "../../redux/actions/auth";
 import { MdUpdate } from "react-icons/md";
 // import { FaCopy } from 'react-icons/fa';
 import ReferralDashboard from "./components/ReferralDashboard";
@@ -20,7 +19,7 @@ import BackButton from "../BackButton";
 // import LabDocAmt from "./LabDocAmt";
 // import BackButton from "../landing/BackButton";
 
-function Profile({ user, _saveUserData }) {
+function Profile({ user }) {
   // const [loading, setLoading] = useState(false);
   const [profile, setProfile] = useState({
     lastname: "",
@@ -60,7 +59,6 @@ function Profile({ user, _saveUserData }) {
       .then((raw) => raw.json())
       .then((res) => {
         console.log(res);
-        _saveUserData({ success: true, token: "", user: res.user[0] });
         dispatch({ type: "LOGIN", payload: { user: res.user[0] } });
       })
       .catch((err) => console.log(err));
@@ -94,7 +92,7 @@ function Profile({ user, _saveUserData }) {
       <CardBody tag="div">
         <div className="row">
           <div
-            className={`col-sm-12  col-xs-12  
+            className={`col-sm-12  col-xs-12
              `}
             style={{ margin: "7px 0" }}
           >
@@ -171,13 +169,7 @@ function mapStateToProps({ auth }) {
   };
 }
 
-function mapDisptachToProps(dispatch) {
-  return {
-    _saveUserData: (data) => dispatch(saveUserData(data)),
-  };
-}
-
 export default connect(
   mapStateToProps,
-  mapDisptachToProps
+  null
 )(Profile);

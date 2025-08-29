@@ -20,15 +20,6 @@ function DocReg() {
   const { referralId } = match.params;
 
   const [submitting, toggleSubmitting] = useState(false);
-  const [checkingUsername, toggleCheckingUsername] = useState(false);
-  const [usernameGood, setUsernameGood] = useState(false);
-  const [usernameMsg, setUsernameMsg] = useState("");
-  const [checkingEmail, toggleCheckingEmail] = useState(false);
-  const [emailGood, setEmailGood] = useState(false);
-  const [emailMsg, setEmailMsg] = useState("");
-  const [checkingPrefix, toggleCheckingPrefix] = useState(false);
-  const [prefixGood, setPrefixGood] = useState(false);
-  const [prefixMsg, setPrefixMsg] = useState("");
   const [error, setError] = useState("");
   const [specialities, setSpecialities] = useState([]);
   const [form, setForm] = useState({
@@ -49,67 +40,6 @@ function DocReg() {
   const [mode, setMode] = useState("basic");
 
   const onInputChange = (name, value) => setForm({ ...form, [name]: value });
-
-  useEffect(() => {
-    getSpecialityList(
-      (list) => setSpecialities(list),
-      () => console.log("An error occured")
-    );
-  }, []);
-
-  const handleUsernameChange = (value) => {
-    setForm({ ...form, username: value });
-    toggleCheckingUsername(true);
-    checkUsername(
-      value,
-      (msg) => {
-        toggleCheckingUsername(false);
-        setUsernameGood(true);
-        setUsernameMsg(msg);
-      },
-      (err) => {
-        toggleCheckingUsername(false);
-        setUsernameGood(false);
-        setUsernameMsg(err);
-      }
-    );
-  };
-
-  const handleEmailChange = (value) => {
-    setForm({ ...form, email: value });
-    toggleCheckingEmail(true);
-    checkEmail(
-      value,
-      (msg) => {
-        toggleCheckingEmail(false);
-        setEmailGood(true);
-        setEmailMsg(msg);
-      },
-      (err) => {
-        toggleCheckingEmail(false);
-        setEmailGood(false);
-        setEmailMsg(err);
-      }
-    );
-  };
-
-  const handlePrefixChange = (value) => {
-    setForm({ ...form, prefix: value.toUpperCase() });
-    toggleCheckingPrefix(true);
-    checkPrefix(
-      value,
-      (msg) => {
-        toggleCheckingPrefix(false);
-        setPrefixGood(true);
-        setPrefixMsg(msg);
-      },
-      (err) => {
-        toggleCheckingPrefix(false);
-        setPrefixGood(false);
-        setPrefixMsg(err);
-      }
-    );
-  };
 
   const submit = () => {
     if (
@@ -132,7 +62,7 @@ function DocReg() {
   };
 
   const saveDocRecord = () => {
-    fetch(`${apiURL()}/users/doctors/create`, {
+    fetch(`${apiURL()}/doctors`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -142,19 +72,11 @@ function DocReg() {
       .then((raw) => raw.json())
       .then((data) => {
         toggleSubmitting(false);
-        if (data.success) {
-          console.log(data);
-          setMode("success");
-        } else {
-          toggleSubmitting(false);
-          if (data.username) {
-            setError(data.username);
-          }
-          console.log("error => ", data);
-        }
+        setMode("success");
       })
       .catch((err) => {
         toggleSubmitting(false);
+        setError("An error occured");
         console.log("err");
       });
   };
@@ -175,18 +97,6 @@ function DocReg() {
             error={error}
             submit={submit}
             submitting={submitting}
-            checkingUsername={checkingUsername}
-            usernameGood={usernameGood}
-            usernameMsg={usernameMsg}
-            checkingEmail={checkingEmail}
-            emailGood={emailGood}
-            emailMsg={emailMsg}
-            checkingPrefix={checkingPrefix}
-            prefixGood={prefixGood}
-            prefixMsg={prefixMsg}
-            handleUsernameChange={handleUsernameChange}
-            handleEmailChange={handleEmailChange}
-            handlePrefixChange={handlePrefixChange}
             showPass={showPassword}
             toggleShowPass={togglePassword}
             showRPass={showRPassword}
@@ -205,18 +115,6 @@ function UserInfo({
   error = "",
   submit = (f) => f,
   submitting = false,
-  checkingUsername = false,
-  usernameGood = false,
-  usernameMsg = "",
-  checkingEmail = false,
-  emailGood = false,
-  emailMsg = "",
-  checkingPrefix = false,
-  prefixGood = false,
-  prefixMsg = "",
-  handleUsernameChange = (f) => f,
-  handlePrefixChange = (f) => f,
-  handleEmailChange = (f) => f,
   toggleShowPass = (f) => f,
   showPass = false,
   toggleRShowPass = (f) => f,
@@ -292,13 +190,10 @@ function UserInfo({
               className="col-lg-6"
               label="Username"
               name="username"
-              onChange={(e) => handleUsernameChange(e.target.value)}
+              onChange={(e) => onInputChange("username", e.target.value)}
               value={form.username}
               placeholder="e.g. john"
               required
-              loading={checkingUsername}
-              good={usernameGood}
-              message={usernameMsg}
             />
           </div>
           <div className="col-lg-6">
@@ -306,13 +201,10 @@ function UserInfo({
               className="col-lg-6"
               label="Preferred prefix to append to Patient file no. generation"
               name="prefix"
-              onChange={(e) => handlePrefixChange(e.target.value)}
+              onChange={(e) => onInputChange("prefix", e.target.value)}
               value={form.prefix}
               placeholder="e.g. JHN for Dr. John Smith"
               required
-              loading={checkingPrefix}
-              good={prefixGood}
-              message={prefixMsg}
             />
           </div>
           <div className="col-lg-6">
@@ -321,13 +213,10 @@ function UserInfo({
               label="Email"
               type="email"
               name="email"
-              onChange={(e) => handleEmailChange(e.target.value)}
+              onChange={(e) => onInputChange("email", e.target.value)}
               value={form.email}
               placeholder="e.g. johnsmith@demo.com"
               required
-              loading={checkingEmail}
-              good={emailGood}
-              message={emailMsg}
             />
           </div>
           <div className="col-lg-6">

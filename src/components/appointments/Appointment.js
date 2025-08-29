@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   Card,
   CardHeader,
@@ -10,9 +10,32 @@ import {
   Table,
 } from 'reactstrap'
 import { useHistory } from 'react-router-dom'
+import { apiURL } from '../../redux/actions'
+import Loading from '../comp/components/Loading'
 
 function Appointment() {
   const history = useHistory()
+  const [appointments, setAppointments] = useState([])
+  const [loading, setLoading] = useState(false)
+
+  const getAppointments = () => {
+    setLoading(true)
+    fetch(`${apiURL()}/appointments`)
+      .then((raw) => raw.json())
+      .then((data) => {
+        setAppointments(data)
+        setLoading(false)
+      })
+      .catch((err) => {
+        console.log(err)
+        setLoading(false)
+      })
+  }
+
+  useEffect(() => {
+    getAppointments()
+  }, [])
+
   return (
     <div>
       <Row>
@@ -36,39 +59,40 @@ function Appointment() {
                   </Button>
                 </div>
                 <Row className="mt-4">
+                  {loading && <Loading />}
                   <Table className="mt-4 table table-bordered">
                     <thead>
                       <tr>
-                        <th>Patient ID</th>
+                        <th>Patient Name</th>
                         <th>Purpose</th>
-                        <th>Speciality</th>
-                        <th>Other Senices</th>
-                        <th>Amount</th>
-                        <th>State</th>
+                        <th>Department</th>
+                        <th>Doctor</th>
+                        <th>Date</th>
                         <th>Action</th>
                       </tr>
                     </thead>
 
                     <tbody>
-                      <tr>
-                        <td>329-1</td>
-                        <td>Consultation</td>
-                        <td>Generic</td>
-                        <td></td>
-                        <td>5,000</td>
-                        <td>Pending</td>
-                        <td>
-                          <Button onClick={() => history.push('/me/appointments/viewappointment')}>
-                            View
-                          </Button>
-                          &nbsp;
-                          <Button
-                            onClick={() => history.push('/me/appointments/bookanappointment')}
-                          >
-                            Edit
-                          </Button>
-                        </td>
-                      </tr>
+                      {appointments.map((item, index) => (
+                        <tr key={index}>
+                          <td>{item.patientName}</td>
+                          <td>{item.purpose}</td>
+                          <td>{item.department}</td>
+                          <td>{item.doctor}</td>
+                          <td>{item.preferredDate}</td>
+                          <td>
+                            <Button onClick={() => history.push('/me/appointments/viewappointment')}>
+                              View
+                            </Button>
+                            &nbsp;
+                            <Button
+                              onClick={() => history.push('/me/appointments/bookanappointment')}
+                            >
+                              Edit
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
                     </tbody>
                   </Table>
                 </Row>

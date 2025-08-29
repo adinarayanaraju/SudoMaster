@@ -102,15 +102,16 @@ export function patientLogin(
   error = (f) => f
 ) {
   return async (dispatch) => {
-    fetch(`${apiURL()}/users`)
+    fetch(`${apiURL()}/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    })
       .then((raw) => raw.json())
-      .then((users) => {
-        const user = users.find(
-          (u) => u.email === email && u.password === password
-        );
-        if (user) {
-          localStorage.setItem("@@__token", user.id);
-          dispatch({ type: LOGIN, payload: { user } });
+      .then((data) => {
+        if (data.token) {
+          localStorage.setItem("@@__token", data.token);
+          dispatch({ type: LOGIN, payload: { user: data.user } });
           cb();
         } else {
           error("Invalid credentials");
@@ -184,11 +185,13 @@ export function init(history, location) {
     dispatch({ type: "START_FULL_PAGE_LOADING" });
     let token = localStorage.getItem("@@__token");
     if (token) {
-      fetch(`${apiURL()}/users/${token}`)
+      fetch(`${apiURL()}/auth/verify-token`, {
+        headers: { Authorization: token },
+      })
         .then((raw) => raw.json())
-        .then((user) => {
-          if (user) {
-            dispatch({ type: LOGIN, payload: { user } });
+        .then((data) => {
+          if (data.success) {
+            dispatch({ type: LOGIN, payload: { user: data.user } });
             dispatch({ type: "STOP_FULL_PAGE_LOADING" });
             if (location.pathname === "/auth") {
               history.push("/");

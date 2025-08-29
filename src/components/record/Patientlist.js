@@ -9,7 +9,6 @@ import { connect } from 'react-redux'
 // import RenderPatientList from './RenderPatientList';
 import { _deleteData, _customNotify, url } from '../utils/helpers'
 // import EditModal from './EditModal';
-import PouchDB from 'pouchdb-browser'
 import { toaster } from 'evergreen-ui'
 import { getPatientAssignedToday } from '../../redux/actions/diagnosis'
 import { _fetchApi } from '../../redux/actions/api'
@@ -22,8 +21,6 @@ import PatientAssignedToday from './PatientAssignedToday'
 import { compose } from 'redux'
 import { withRouter } from "react-router";
 import UploadPassportID from './UploadPassportID'
-
-export const recordsDB = PouchDB('recordsDB')
 
 class Patientlist extends Component {
   constructor(props) {
@@ -112,53 +109,20 @@ class Patientlist extends Component {
   // fetching the data to display on componentDidMount using the
   // helper function _fetchData()
   fetchData() {
-    this.setState({ unassignedPatientlistLoading: true })
-    recordsDB
-      .get('unassigned')
-      .then((records) => {
-        this.setState({
-          patientrecords: records.unassignedPatients,
-          unassignedPatientlistLoading: false,
-        })
-      })
-      .catch((err) => console.log(err))
+    this.setState({ unassignedPatientlistLoading: true });
     _fetchApi(
-      `${url}/patientrecords/unassignedPatientlist`,
-      ({ results }) => {
-        if (results.length) {
-          recordsDB
-            .get('unassigned')
-            .then((doc) =>
-              recordsDB
-                .put({
-                  _id: 'unassigned',
-                  _rev: doc._rev,
-                  unassignedPatients: results,
-                })
-                .then(() => {
-                  console.log('updated recordsDB')
-                })
-                .catch((err) => console.log(err)),
-            )
-            .catch(() => {
-              recordsDB
-                .put({ _id: 'unassigned', unassignedPatients: results })
-                .then(() => {
-                  console.log('added to recordsDB')
-                })
-                .catch((err) => console.log(err))
-            })
-          this.setState({
-            patientrecords: results,
-            unassignedPatientlistLoading: false,
-          })
-        }
+      `${url}/patients`,
+      (data) => {
+        this.setState({
+          allpatientrecords: data,
+          unassignedPatientlistLoading: false,
+        });
       },
       (err) => {
-        console.log(err.toString())
-        this.setState({ unassignedPatientlistLoading: false })
-      },
-    )
+        console.log(err.toString());
+        this.setState({ unassignedPatientlistLoading: false });
+      }
+    );
   }
 
   // fetchAll = () => {
@@ -179,81 +143,13 @@ class Patientlist extends Component {
     this.props.getPatientAssignedToday()
     window.addEventListener('resize', this.resize.bind(this))
     this.resize()
-
-    recordsDB
-      .get('allpatients')
-      .then((records) => {
-        this.setState({ allpatientrecords: records.allpatients })
-      })
-      .catch((err) => console.log(err))
-
-    // fetch the list of unassigned patients
-    // this.fetchData();
-
-    if (navigator.onLine) {
-      this.syncOfflineData()
-    } else {
-      toaster.warning(`You're offline, Data is being cached offline.`)
-    }
-    // fetch all the patients list
-    // this.fetchAll();
-
-    // recordsDB.changes({
-    //   since: 'now',
-    //   live: true
-    // }).on('change', () => console.log('db changes detected'));
-
+    this.fetchData();
     window.addEventListener('online', this.onNetOn)
     window.addEventListener('offline', this.onNetOff)
   }
 
   onNetOff = () => {
     toaster.warning(`You're offline, Data is being saved.`)
-  }
-
-  syncOfflineData = () => {
-    recordsDB
-      .get('newrec')
-      .then((records) => {
-        if (records.newrec) {
-          let data = records.newrec
-          // perform batch insert of new offline records
-          // let route = 'patientrecords/new';
-          // let callback = () => {
-          //   console.log('Database synchronized');
-          //   records._deleted = true;
-          //   return recordsDB.put(records);
-          // };
-
-          // let error_cb = error => console.log(error.toString());
-
-          console.log(data)
-
-          // _postData({ route, data, callback, error_cb });
-        }
-      })
-      .catch((err) => console.log(err))
-
-    recordsDB.get('recordupdates').then((records) => {
-      if (records.recordupdates) {
-        let data = records.recordupdates
-        // perform batch update of new offline records
-        // let editRoute = 'patientrecords/edit';
-        // let callback = () => {
-        //   console.log('Database is synchronized');
-        //   records._deleted = true;
-        //   return recordsDB.put(records);
-        // };
-
-        // let error_cb = error => console.log(error.toString());
-
-        console.log(data)
-
-        // _postData({ editRoute, data, callback, error_cb });
-        //need
-        //_updateData({ route, data, callback, err_cb })
-      }
-    })
   }
 
   onNetOn = () => {
@@ -370,7 +266,7 @@ class Patientlist extends Component {
             unassignedPatientlistLoading={
               this.state.unassignedPatientlistLoading
             }
-            patientrecords={this.state.patientrecords}
+            patientrecords={this.state.allpatientrecords}
             unassignedError={this.state.unassignedError}
             openDoctorsModal={this.openDoctorsModal}
             openEditModal={this.openEditModal}

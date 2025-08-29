@@ -12,72 +12,36 @@ function ManageDoctor() {
 
   const getData = useCallback(() => {
     toggle(true);
-    fetch(`${apiURL()}/doctors/admin/all`)
+    fetch(`${apiURL()}/doctors`)
       .then((raw) => raw.json())
-      .then((res) => {
-        if (res.results) {
-          toggle(false);
-          setData(res.results);
-        }
+      .then((data) => {
+        toggle(false);
+        setData(data);
       })
-      .catch((error) => console.log(error));
+      .catch((error) => {
+        console.log(error);
+        toggle(false);
+      });
   });
 
   const handleActionSelectChange = async (user, value) => {
-    switch (value) {
-      case 'lead': {
-        toggle(true);
-        let userId = user.id;
-        let response = await fetch(
-          `${apiURL()}/users/lead/referrallink/${userId}`,
-          {
-            method: 'PUT',
-            headers: { 'Content-Type': 'aplication/json' },
-          },
-        );
-        let data = await response.json();
-        if (data) {
-          console.log(data);
-          _customNotify('Data updated!');
-          getData();
-        }
-        toggle(false);
-        break;
+    let updatedUser = { ...user, status: value };
+    try {
+      toggle(true);
+      let response = await fetch(`${apiURL()}/doctors/${user.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedUser),
+      });
+      let data = await response.json();
+      if (data) {
+        _customNotify('Data updated!');
+        getData();
       }
-      case 'approve': {
-        toggle(true);
-        let userId = user.id;
-        let response = await fetch(`${apiURL()}/users/approve/${userId}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'aplication/json' },
-        });
-        let data = await response.json();
-        if (data) {
-          console.log(data);
-          _customNotify('Data updated!');
-          getData();
-        }
-        toggle(false);
-        break;
-      }
-      case 'suspend': {
-        toggle(true);
-        let userId = user.id;
-        let response = await fetch(`${apiURL()}/users/suspend/${userId}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'aplication/json' },
-        });
-        let data = await response.json();
-        if (data) {
-          console.log(data);
-          _customNotify('Data updated!');
-          getData();
-        }
-        toggle(false);
-        break;
-      }
-      default:
-        return null;
+      toggle(false);
+    } catch (error) {
+      console.log(error);
+      toggle(false);
     }
   };
 

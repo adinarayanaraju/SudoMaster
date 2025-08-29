@@ -40,7 +40,6 @@ import {
   SUBMIT_DRUG_LOADING,
 } from "./actionTypes";
 import { _fetchApi, _fetchApi2, _postApi } from "./api";
-export const pharmDB = PouchDB("pharmDB");
 
 export function getPendingPharmacyRequests(
   { status = "request", from = "", to = "" },
@@ -48,12 +47,12 @@ export function getPendingPharmacyRequests(
   error = (f) => f
 ) {
   return (dispatch) => {
-    let route = `prescriptions/pending/${status}?from=${from}&to=${to}`;
+    let route = `prescriptions?status=${status}&_start=${from}&_end=${to}`;
     let success_callback = (data) => {
       // console.log(data)
       callback(data);
-      if (data && data.results) {
-        dispatch({ type: SET_PENDING_PHARMACY_REQUEST, payload: data.results });
+      if (data) {
+        dispatch({ type: SET_PENDING_PHARMACY_REQUEST, payload: data });
       }
     };
     let error_callback = (err) => {
@@ -69,29 +68,23 @@ export function init() {
   return (dispatch) => {
     // dispatch(showLoading('sectionBar'))
     _fetchApi(
-      `${baseAPI}/alert/expiry`,
-      ({ results }) => {
-        if (results) {
-          dispatch({ type: LOAD_EXPIRY_ALERT, payload: results });
-        }
+      `${baseAPI}?expiry_alert=true`,
+      (data) => {
+        dispatch({ type: LOAD_EXPIRY_ALERT, payload: data });
       },
       (error) => console.log(error)
     );
     _fetchApi(
-      `${baseAPI}/alert/quantity`,
-      ({ results }) => {
-        if (results) {
-          dispatch({ type: LOAD_QTTY_ALERT, payload: results });
-        }
+      `${baseAPI}?quantity_alert=true`,
+      (data) => {
+        dispatch({ type: LOAD_QTTY_ALERT, payload: data });
       },
       (error) => console.log(error)
     );
     _fetchApi(
-      `${baseAPI}/expired`,
-      ({ results }) => {
-        if (results) {
-          dispatch({ type: LOAD_EXPIRED, payload: results });
-        }
+      `${baseAPI}?expired=true`,
+      (data) => {
+        dispatch({ type: LOAD_EXPIRED, payload: data });
       },
       (error) => console.log(error)
     );
@@ -103,13 +96,11 @@ export const endpoint = `${apiURL()}/api/pharmacy`;
 export function getDrugList() {
   const facilityId = store.getState().auth.user.facilityId;
   return (dispatch) => {
-    let url = `${endpoint}/v1/get-drug-list?facilityId=${facilityId}`;
+    let url = `${apiURL()}/drugs?facilityId=${facilityId}`;
     _fetchApi2(
       url,
-      (res) => {
-        if (res.success) {
-          dispatch({ type: GET_DRUG_LIST, payload: res.results });
-        }
+      (data) => {
+        dispatch({ type: GET_DRUG_LIST, payload: data });
       },
       (err) => {
         console.log(err);
@@ -121,16 +112,14 @@ export function getDrugList() {
 export function getDrugListCount(filterText) {
   const facilityId = store.getState().auth.user.facilityId;
   return (dispatch) => {
-    let url = `${endpoint}/v1/get-total-drug-list?facilityId=${facilityId}&filterText=${filterText}`;
+    let url = `${apiURL()}/drugs?facilityId=${facilityId}&q=${filterText}`;
     _fetchApi2(
       url,
-      (res) => {
-        if (res.success) {
-          dispatch({
-            type: GET_DRUG_LIST_COUNT,
-            payload: res.results[0].totalDrugs,
-          });
-        }
+      (data) => {
+        dispatch({
+          type: GET_DRUG_LIST_COUNT,
+          payload: data.length,
+        });
       },
       (err) => {
         console.log(err);
@@ -143,14 +132,12 @@ export function getDrugListSearch(searchValue, from, to, query = "default") {
   const facilityId = store.getState().auth.user.facilityId;
   return (dispatch) => {
     dispatch({ type: PHARM_LOADING, payload: true });
-    let url = `${endpoint}/v1/get-drug-search?facilityId=${facilityId}&searchValue=${searchValue}&from=${from}&to=${to}&query=${query}`;
+    let url = `${apiURL()}/drugs?facilityId=${facilityId}&q=${searchValue}&_start=${from}&_end=${to}`;
     _fetchApi2(
       url,
-      (res) => {
-        if (res.success) {
-          dispatch({ type: GET_DRUG_LIST, payload: res.results });
-          dispatch({ type: PHARM_LOADING, payload: false });
-        }
+      (data) => {
+        dispatch({ type: GET_DRUG_LIST, payload: data });
+        dispatch({ type: PHARM_LOADING, payload: false });
       },
       (err) => {
         console.log(err);
@@ -164,15 +151,13 @@ export function getReceiptData(repno, cb = (f) => f) {
   const facilityId = store.getState().auth.user.facilityId;
   return (dispatch) => {
     dispatch({ type: PHARM_LOADING, payload: true });
-    let url = `${endpoint}/v1/get-receipt-data?facilityId=${facilityId}&repno=${repno}`;
+    let url = `${apiURL()}/receipts?facilityId=${facilityId}&repno=${repno}`;
     _fetchApi2(
       url,
-      (res) => {
-        if (res.success) {
-          dispatch({ type: RECEIPT_DATA, payload: res.results });
-          dispatch({ type: PHARM_LOADING, payload: false });
-          cb();
-        }
+      (data) => {
+        dispatch({ type: RECEIPT_DATA, payload: data });
+        dispatch({ type: PHARM_LOADING, payload: false });
+        cb();
       },
       (err) => {
         console.log(err);
@@ -183,24 +168,18 @@ export function getReceiptData(repno, cb = (f) => f) {
 }
 
 export function deletePharmUsers(id) {
-  const facilityId = store.getState().auth.user.facilityId;
   return (dispatch) => {
     dispatch({ type: PHARM_LOADING, payload: true });
-    let url = `${endpoint}/v1/delete-pharm-users?facilityId=${facilityId}&id=${id}`;
-    _fetchApi2(
-      url,
-      (res) => {
-        if (res.success) {
-          dispatch({ type: PHARM_USER, payload: res.results });
-          dispatch(getPharmUser());
-          dispatch({ type: PHARM_LOADING, payload: false });
-        }
-      },
-      (err) => {
+    let url = `${apiURL()}/users/${id}`;
+    fetch(url, { method: 'DELETE' })
+      .then(() => {
+        dispatch(getPharmUser());
+        dispatch({ type: PHARM_LOADING, payload: false });
+      })
+      .catch((err) => {
         console.log(err);
         dispatch({ type: PHARM_LOADING, payload: false });
-      }
-    );
+      });
   };
 }
 
@@ -208,14 +187,12 @@ export function getPharmUser() {
   const facilityId = store.getState().auth.user.facilityId;
   return (dispatch) => {
     dispatch({ type: PHARM_LOADING, payload: true });
-    let url = `${endpoint}/v1/get-pharm-users?facilityId=${facilityId}`;
+    let url = `${apiURL()}/users?facilityId=${facilityId}`;
     _fetchApi2(
       url,
-      (res) => {
-        if (res.success) {
-          dispatch({ type: PHARM_USER, payload: res.results });
-          dispatch({ type: PHARM_LOADING, payload: false });
-        }
+      (data) => {
+        dispatch({ type: PHARM_USER, payload: data });
+        dispatch({ type: PHARM_LOADING, payload: false });
       },
       (err) => {
         console.log(err);
@@ -234,18 +211,16 @@ export function getPurchaseItem(
   const facilityId = store.getState().auth.user.facilityId;
   return (dispatch) => {
     dispatch({ type: PHARM_LOADING, payload: true });
-    let url = `${endpoint}/v1/get-purchase-item?facilityId=${facilityId}&from=${from}&to=${to}&store=${storeName}&query_type=${query_type}`;
+    let url = `${apiURL()}/purchases?facilityId=${facilityId}&_start=${from}&_end=${to}&storeName=${storeName}&query_type=${query_type}`;
     _fetchApi2(
       url,
-      (res) => {
+      (data) => {
         const arr = [];
-        res.results.forEach((item) => {
+        data.forEach((item) => {
           arr.push({ ...item, enable: false });
         });
-        if (res.success) {
-          dispatch({ type: GET_PURCHASE_ITEM, payload: arr });
-          dispatch({ type: PHARM_LOADING, payload: false });
-        }
+        dispatch({ type: GET_PURCHASE_ITEM, payload: arr });
+        dispatch({ type: PHARM_LOADING, payload: false });
 
         cb();
       },
@@ -259,19 +234,16 @@ export function getPurchaseItem(
 }
 
 export function getPharmStore(cb = (f) => f) {
-  const facilityId = store.getState().auth.user.facilityId;
   return (dispatch) => {
     dispatch({ type: PHARM_LOADING, payload: true });
-    let url = `${endpoint}/v1/get-pharm-store`;
+    let url = `${apiURL()}/pharm-stores`;
     _fetchApi2(
       url,
-      (res) => {
+      (data) => {
         // console.log(res)
-        if (res.success) {
-          dispatch({ type: GET_PHARM_STORE, payload: res.results });
-          dispatch({ type: PHARM_LOADING, payload: false });
-          cb(res.results);
-        }
+        dispatch({ type: GET_PHARM_STORE, payload: data });
+        dispatch({ type: PHARM_LOADING, payload: false });
+        cb(data);
       },
       (err) => {
         console.log(err);
@@ -285,14 +257,12 @@ export function getClientInfo() {
   // const facilityId = store.getState().auth.user.facilityId;
   return (dispatch) => {
     dispatch({ type: PHARM_LOADING, payload: true });
-    let url = `${endpoint}/v1/get-client-info`;
+    let url = `${apiURL()}/clients`;
     _fetchApi2(
       url,
-      (res) => {
-        if (res.success) {
-          dispatch({ type: GET_CLIENT_INFO, payload: res.results });
-          dispatch({ type: PHARM_LOADING, payload: false });
-        }
+      (data) => {
+        dispatch({ type: GET_CLIENT_INFO, payload: data });
+        dispatch({ type: PHARM_LOADING, payload: false });
       },
       (err) => {
         console.log(err);
@@ -313,13 +283,11 @@ export function getDrugView(
 ) {
   // const facilityId = store.getState().auth.user.facilityId;
   return (dispatch) => {
-    let url = `${endpoint}/v1/get-drug-view?to=${to}&from=${from}&store=${store}&item_code=${item_code}&facilityId=${facilityId}&drug_name=${drug_name}&expiry_date=${expiry_date}`;
+    let url = `${apiURL()}/drugs?store=${store}&item_code=${item_code}&_start=${from}&_end=${to}&facilityId=${facilityId}&drug_name=${drug_name}&expiry_date=${expiry_date}`;
     _fetchApi2(
       url,
-      (res) => {
-        if (res.success) {
-          dispatch({ type: GET_PURCHASE_ITEM, payload: res.results });
-        }
+      (data) => {
+        dispatch({ type: GET_PURCHASE_ITEM, payload: data });
       },
       (err) => {
         console.log(err);
@@ -347,13 +315,11 @@ export function getDrugView(
 export function getOutOfStock() {
   const facilityId = store.getState().auth.user.facilityId;
   return (dispatch) => {
-    let url = `${endpoint}/v1/get-drug-list?facilityId=${facilityId}&query_type=out_of_stock`;
+    let url = `${apiURL()}/drugs?facilityId=${facilityId}&out_of_stock=true`;
     _fetchApi2(
       url,
-      (res) => {
-        if (res.success) {
-          dispatch({ type: OUT_OF_STOCK_LIST, payload: res.results });
-        }
+      (data) => {
+        dispatch({ type: OUT_OF_STOCK_LIST, payload: data });
       },
       (err) => {
         console.log(err);
@@ -365,13 +331,11 @@ export function getOutOfStock() {
 export function getSupplierStatement(from, to, supplier_code) {
   const facilityId = store.getState().auth.user.facilityId;
   return (dispatch) => {
-    let url = `${endpoint}/v1/get-supplier-statement?supplier_code=${supplier_code}&to=${to}&from=${from}&facilityId=${facilityId}`;
+    let url = `${apiURL()}/supplier-statement?supplier_code=${supplier_code}&_start=${from}&_end=${to}&facilityId=${facilityId}`;
     _fetchApi2(
       url,
-      (res) => {
-        if (res.success) {
-          dispatch({ type: GET_SUPPLIER_STATEMENT, payload: res.results });
-        }
+      (data) => {
+        dispatch({ type: GET_SUPPLIER_STATEMENT, payload: data });
       },
       (err) => {
         console.log(err);
@@ -383,13 +347,11 @@ export function getSupplierStatement(from, to, supplier_code) {
 export function getPatientAccountView(from, to, acct) {
   const facilityId = store.getState().auth.user.facilityId;
   return (dispatch) => {
-    let url = `${endpoint}/v1/get-patient-account-view?acct=${acct}&to=${to}&from=${from}&facilityId=${facilityId}`;
+    let url = `${apiURL()}/patient-account-view?acct=${acct}&_start=${from}&_end=${to}&facilityId=${facilityId}`;
     _fetchApi2(
       url,
-      (res) => {
-        if (res.success) {
-          dispatch({ type: GET_CLIENT_STATEMENT, payload: res.results });
-        }
+      (data) => {
+        dispatch({ type: GET_CLIENT_STATEMENT, payload: data });
       },
       (err) => {
         console.log(err);
@@ -401,13 +363,11 @@ export function getPatientAccountView(from, to, acct) {
 export function getStockInfo(from, to) {
   const facilityId = store.getState().auth.user.facilityId;
   return (dispatch) => {
-    let url = `${endpoint}/v1/get-stock-info?to=${to}&from=${from}&facilityId=${facilityId}`;
+    let url = `${apiURL()}/stock-info?_start=${from}&_end=${to}&facilityId=${facilityId}`;
     _fetchApi2(
       url,
-      (res) => {
-        if (res.success) {
-          dispatch({ type: GET_STOCK_INFO, payload: res.results[0] });
-        }
+      (data) => {
+        dispatch({ type: GET_STOCK_INFO, payload: data[0] });
       },
       (err) => {
         console.log(err);
@@ -419,13 +379,11 @@ export function getStockInfo(from, to) {
 export function _getStockInfoStore(from, to) {
   const facilityId = store.getState().auth.user.facilityId;
   return (dispatch) => {
-    let url = `${endpoint}/v1/get-stock-n-info-store?to=${to}&from=${from}&facilityId=${facilityId}`;
+    let url = `${apiURL()}/stock-info-store?_start=${from}&_end=${to}&facilityId=${facilityId}`;
     _fetchApi2(
       url,
-      (res) => {
-        if (res.success) {
-          dispatch({ type: GET_STOCK_INFO_STORE, payload: res.results[0] });
-        }
+      (data) => {
+        dispatch({ type: GET_STOCK_INFO_STORE, payload: data[0] });
       },
       (err) => {
         console.log(err);
@@ -437,16 +395,14 @@ export function _getStockInfoStore(from, to) {
 export function getStockInfoShelf(from, to) {
   const facilityId = store.getState().auth.user.facilityId;
   return (dispatch) => {
-    let url = `${endpoint}/v1/get-stock-info-shelf?to=${to}&from=${from}&facilityId=${facilityId}`;
+    let url = `${apiURL()}/stock-info-shelf?_start=${from}&_end=${to}&facilityId=${facilityId}`;
     _fetchApi2(
       url,
-      (res) => {
-        if (res.success) {
-          dispatch({
-            type: GET_STOCK_INFO_STORE_SHELF,
-            payload: res.results[0],
-          });
-        }
+      (data) => {
+        dispatch({
+          type: GET_STOCK_INFO_STORE_SHELF,
+          payload: data[0],
+        });
       },
       (err) => {
         console.log(err);
@@ -460,14 +416,12 @@ export function getTopSales(from, to) {
 
   return (dispatch) => {
     dispatch({ type: PHARM_LOADING, payload: true });
-    let url = `${endpoint}/v1/get-top-sales?to=${to}&from=${from}&facilityId=${facilityId}`;
+    let url = `${apiURL()}/top-sales?_start=${from}&_end=${to}&facilityId=${facilityId}`;
     _fetchApi2(
       url,
-      (res) => {
-        if (res.success) {
-          dispatch({ type: GET_TOP_SALES, payload: res.results });
-          dispatch({ type: PHARM_LOADING, payload: false });
-        }
+      (data) => {
+        dispatch({ type: GET_TOP_SALES, payload: data });
+        dispatch({ type: PHARM_LOADING, payload: false });
       },
       (err) => {
         console.log(err);

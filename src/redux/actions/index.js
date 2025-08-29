@@ -1,3 +1,9 @@
+export function apiURL() {
+  return "http://localhost:3001";
+}
+
+export const sudoEMRURL = "http://localhost:3001";
+
 // export const apiURL = 'https://pscprime.com/hms1/hms-server';
 
 // let exisiting = localStorage.getItem('ipAddr')
@@ -8,27 +14,6 @@ let local = "127.0.0.1";
 // let locahost = '127.0.0.1'
 // let local = 'localhost'
 export const ipAddr = local;
-
-// local setup
-export function apiURL() {
-  if (!navigator.onLine) {
-    // return 'http://192.168.0.118:49495'
-    return `http://localhost:49495`;
-  } else {
-    // return 'http://localhost:49495'
-    return `http://localhost:49495`;
-  }
-}
-
-// export function apiURL() {
-//   if (!navigator.onLine) {
-//     // return 'http://192.168.8.108:49495'
-//     return "http://192.168.0.171:49495";
-//   } else {
-//     // return 'http://192.168.8.108:49495'
-//     return "http://192.168.0.171:49495";
-//   }
-// }
 
 // const REMOTE_DICOM_SERVER = 'http://pscprime.com/test/dicom'
 const LOCAL_DICOM_SERVER = `http://localhost:5986`;
@@ -52,68 +37,11 @@ export const DICOM_CLIENT_WEB_URL =
     ? LOCAL_DICOM_WEB_URL
     : REMOTE_DICOM_WEB_URL;
 
-// export function apiURL() {
-//   if (!navigator.onLine) {
-//     return "https://yge.wvi.mybluehost.me/test/server";
-//   } else {
-//     return "https://yge.wvi.mybluehost.me/test/server";
-//   }
-// }
-
-// export function apiURL() {
-//   if (!navigator.onLine) {
-//     return "https://yge.wvi.mybluehost.me/test/demo_server";
-//   } else {
-//     return "https://yge.wvi.mybluehost.me/test/demo_server";
-//   }
-// }
-
-// local IP
-// export function apiURL() {
-//   if (!navigator.onLine) {
-//     return "http://localhost:49495";
-//   } else {
-//     return "http://localhost:49495";
-//   }
-// }
-
-// prime IP
-// export function apiURL() {
-//   if (!navigator.onLine) {
-//     return "http://192.168.0.118:49495";
-//   } else {
-//     return "http://192.168.0.118:49495";
-//   }
-// }
-
-// deploy
-
-// Abeeb IP
-// export function apiURL() {
-//   if (!navigator.onLine) {
-//     return "http://192.168.0.117:49495";
-//   } else {
-//     return "http://192.168.0.117:49495";
-//   }
-// }
-
-// deploy Prime
-// export function apiURL() {
-//   if (!navigator.onLine) {
-//     // return 'http://192.168.0.118:49495'
-//     return "http://127.0.0.1:49495";
-//   } else {
-//     // return 'http://192.168.0.118:49495'
-//     return "http://127.0.0.1:49495";
-//   }
-// }
-
 // export const apiURL = 'http://127.0.0.1:49494';
 // export const apiURL = 'https://pscprime.com/hms-bk/code';
 // export const apiURL = 'https://bitshis-server.herokuapp.com';
 // export const apiURL = () => 'https://doc-individual.herokuapp.com';
 
-export const sudoEMRURL = "https://sudoEMR.herokuapp.com";
 // export const sudoEMRURL = 'http://localhost:9000';
 
 // export const twilioServer = 'http://localhost:6000';

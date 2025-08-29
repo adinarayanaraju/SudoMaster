@@ -1,0 +1,13 @@
+{
+  "users": [
+    {
+      "id": 1,
+      "fullname": "Test User",
+      "email": "test@example.com",
+      "password": "password"
+    }
+  ],
+  "doctors": [],
+  "patients": [],
+  "appointments": []
+}
